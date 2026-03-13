@@ -95,32 +95,84 @@ app.get('/api/proxy-video', async (req, res) => {
     }
 });
 
-// 3. Fast validation endpoint - DEPRECATED (Backend handles auth now)
-app.post('/api/validate-token', (req, res) => {
-    res.json({ valid: true, message: 'Backend automated authentication enabled.' });
+// 3. Validation endpoint
+app.post('/api/validate-token', async (req, res) => {
+    const { accessToken, projectId } = req.body;
+    
+    if (!accessToken) {
+        return res.json({ valid: false, message: 'No access token provided.' });
+    }
+
+    try {
+        // Simple validation call to check if the token works
+        const response = await fetch(`https://aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/publishers/google/models`, {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+        });
+        
+        if (response.ok) {
+            res.json({ valid: true });
+        } else {
+            res.json({ valid: false });
+        }
+    } catch (error) {
+        res.json({ valid: false, error: error.message });
+    }
 });
 
 // 4. Main Gemini API proxy endpoint using SDK
 app.post('/api/generate', async (req, res) => {
-    console.log('========== Generate endpoint called (Automated Auth) ==========');
-    const { systemPrompt, contentParts, location } = req.body;
+    const { systemPrompt, contentParts, location, authMethod, accessToken: clientAccessToken, projectId: clientProjectId } = req.body;
+    
+    console.log(`========== Generate endpoint called (Method: ${authMethod || 'auto'}) ==========`);
+    
     const model = 'gemini-2.5-pro';
-    const projectId = process.env.GOOGLE_CLOUD_PROJECT || 'g-monks-lab';
     const vertexLocation = location || 'us-central1';
-
+    
     try {
-        console.log('Fetching fresh access token...');
-        const accessToken = await getAccessToken();
-        
-        // Store original value to restore later
-        const originalAuthToken = process.env.GOOGLE_AUTH_TOKEN;
+        let finalAccessToken;
+        let finalProjectId;
+        let isVertexAi = true;
+
+        if (authMethod === 'api-key') {
+            // Priority: client key (if we ever add it back to UI) > server key
+            const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
+            if (!apiKey) throw new Error('API Key not configured on server.');
+            
+            const ai = new GoogleGenAI(apiKey);
+            const geminiModel = ai.getGenerativeModel({ model: "gemini-2.0-flash-exp" }); // Defaulting to flash for API Key path
+
+            const parts = [];
+            if (systemPrompt) parts.push({ text: systemPrompt });
+            if (contentParts) {
+                contentParts.forEach(part => {
+                    if (part.text) parts.push({ text: part.text });
+                    if (part.inlineData) parts.push({ inlineData: part.inlineData });
+                });
+            }
+
+            const result = await geminiModel.generateContent({ contents: [{ role: "user", parts }] });
+            const response = await result.response;
+            return res.json({ text: response.text().trim() });
+        }
+
+        // Access Token Path (Manual or Auto)
+        if (authMethod === 'access-token' && clientAccessToken) {
+            finalAccessToken = clientAccessToken;
+            finalProjectId = clientProjectId || process.env.GOOGLE_CLOUD_PROJECT;
+        } else {
+            // Automated path
+            console.log('Using automated gcloud auth...');
+            finalAccessToken = await getAccessToken();
+            finalProjectId = clientProjectId || process.env.GOOGLE_CLOUD_PROJECT || 'g-monks-lab';
+        }
+
+        // Use Vertex AI SDK for Access Token paths
+        process.env.GOOGLE_AUTH_TOKEN = finalAccessToken;
         
         try {
-            process.env.GOOGLE_AUTH_TOKEN = accessToken;
-            
             const ai = new GoogleGenAI({
                 vertexai: true,
-                project: projectId,
+                project: finalProjectId,
                 location: vertexLocation
             });
             
@@ -136,11 +188,13 @@ app.post('/api/generate', async (req, res) => {
                                 data: part.inlineData.data
                             }
                         });
+                    } else if (part.text) {
+                        parts.push({ text: part.text });
                     }
                 });
             }
             
-            console.log(`Generating content for project ${projectId} in ${vertexLocation}`);
+            console.log(`Generating content for project ${finalProjectId} in ${vertexLocation}`);
             const response = await ai.models.generateContent({
                 model: model,
                 contents: [{
@@ -152,11 +206,7 @@ app.post('/api/generate', async (req, res) => {
             res.json({ text: (response.text || "").trim() });
             
         } finally {
-            if (originalAuthToken !== undefined) {
-                process.env.GOOGLE_AUTH_TOKEN = originalAuthToken;
-            } else {
-                delete process.env.GOOGLE_AUTH_TOKEN;
-            }
+            delete process.env.GOOGLE_AUTH_TOKEN;
         }
 
     } catch (error) {

@@ -23,13 +23,13 @@ import { initGallery, getGalleryContent } from './features/gallery.js';
 import { initTimeline, getTimelineContent } from './features/timeline.js';
 
 const tabs = {
-    generator: { getContent: getGeneratorContent, init: initGenerator },
-    enhancer: { getContent: getEnhancerContent, init: initEnhancer },
-    converter: { getContent: getConverterContent, init: initConverter },
-    'alignment-eval': { getContent: getAlignmentEvalContent, init: initAlignmentEval },
-    eval: { getContent: getEvalContent, init: initEval },
-    gallery: { getContent: getGalleryContent, init: initGallery },
-    timeline: { getContent: getTimelineContent, init: initTimeline }
+    generator: { getContent: getGeneratorContent, init: initGenerator, needsAuth: true },
+    enhancer: { getContent: getEnhancerContent, init: initEnhancer, needsAuth: true },
+    converter: { getContent: getConverterContent, init: initConverter, needsAuth: true },
+    'alignment-eval': { getContent: getAlignmentEvalContent, init: initAlignmentEval, needsAuth: true },
+    eval: { getContent: getEvalContent, init: initEval, needsAuth: true },
+    gallery: { getContent: getGalleryContent, init: initGallery, needsAuth: false },
+    timeline: { getContent: getTimelineContent, init: initTimeline, needsAuth: true }
 };
 
 // Dark Mode Functions
@@ -124,7 +124,10 @@ async function showMainTab(tabName) {
         console.warn(`Tab ${tabName} not found`);
         return;
     }
-    
+
+    const mainContent = document.getElementById('main-content');
+    if (!mainContent) return;
+
     // Load tab content asynchronously.
     mainContent.innerHTML = await feature.getContent();
     feature.init();
@@ -136,19 +139,73 @@ async function showMainTab(tabName) {
             tabEl.classList.toggle('main-tab-active', tabKey === tabName);
         }
     });
-    
+
     // Add fade-in animation to content
     mainContent.classList.add('fade-in');
     setTimeout(() => {
         mainContent.classList.remove('fade-in');
     }, 500);
+
+    // Show or hide auth section based on tab requirements
+    const authSectionContainer = document.getElementById('auth-section-container');
+    if (authSectionContainer) {
+        authSectionContainer.style.display = feature.needsAuth ? 'block' : 'none';
+        
+        // Update status indicator
+        const statusEl = document.getElementById('access-token-status');
+        if (statusEl && feature.needsAuth) {
+            const method = document.getElementById('auth-method-select')?.value;
+            statusEl.textContent = method === 'api-key' ? 'Using API Key' : 'Using Access Token';
+        }
+    }
     
     console.log(`Switched to ${tabName} tab`);
 }
 
-// Token validation - DEPRECATED (Backend handles auth now)
+// Token validation
 async function validateAccessToken() {
-    console.log('Backend automated authentication enabled.');
+    const accessToken = document.getElementById('access-token-input').value;
+    const projectId = document.getElementById('project-id-input').value;
+    const validateBtn = document.getElementById('validate-token-btn');
+    const statusEl = document.getElementById('access-token-status');
+
+    if (!accessToken) {
+        showNotification('Please enter an access token.', 'error');
+        return;
+    }
+
+    const originalBtnText = validateBtn.textContent;
+    validateBtn.disabled = true;
+    validateBtn.textContent = 'Validating...';
+
+    try {
+        const response = await fetch('/api/validate-token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ accessToken, projectId })
+        });
+
+        const data = await response.json();
+        if (data.valid) {
+            showNotification('Token is valid!', 'success');
+            if (statusEl) {
+                statusEl.textContent = `Token valid for project: ${projectId}`;
+                statusEl.classList.add('text-green-500');
+            }
+        } else {
+            showNotification('Token is invalid or expired.', 'error');
+            if (statusEl) {
+                statusEl.textContent = 'Invalid token';
+                statusEl.classList.add('text-red-500');
+            }
+        }
+    } catch (error) {
+        console.error('Validation error:', error);
+        showNotification('Failed to validate token.', 'error');
+    } finally {
+        validateBtn.disabled = false;
+        validateBtn.textContent = originalBtnText;
+    }
 }
 
 // Enhanced notification system with dark mode support
@@ -255,6 +312,54 @@ document.addEventListener('DOMContentLoaded', () => {
             tabEl.addEventListener('click', () => showMainTab(tabKey));
         }
     });
+
+    // Authentication Logic initialization
+    const authMethodSelect = document.getElementById('auth-method-select');
+    const apiKeySection = document.getElementById('api-key-auth-section');
+    const accessTokenSection = document.getElementById('access-token-auth-section');
+    const validateTokenBtn = document.getElementById('validate-token-btn');
+
+    if (authMethodSelect) {
+        authMethodSelect.addEventListener('change', (e) => {
+            const method = e.target.value;
+            if (method === 'api-key') {
+                apiKeySection.classList.remove('hidden');
+                accessTokenSection.classList.add('hidden');
+            } else {
+                apiKeySection.classList.add('hidden');
+                accessTokenSection.classList.remove('hidden');
+            }
+            
+            // Update status
+            const statusEl = document.getElementById('access-token-status');
+            if (statusEl) {
+                statusEl.textContent = method === 'api-key' ? 'Using API Key' : 'Using Access Token';
+                statusEl.className = 'text-xs text-gray-500 truncate max-w-[150px] md:max-w-xs';
+            }
+        });
+    }
+
+    if (validateTokenBtn) {
+        validateTokenBtn.addEventListener('click', validateAccessToken);
+    }
+
+    // Auth Collapsible
+    const authHeader = document.getElementById('auth-header');
+    const authContent = document.getElementById('auth-content');
+    const authChevron = document.getElementById('auth-chevron');
+
+    if (authHeader && authContent && authChevron) {
+        authHeader.addEventListener('click', () => {
+            const isHidden = authContent.classList.toggle('hidden');
+            authChevron.style.transform = isHidden ? 'rotate(-90deg)' : 'rotate(0deg)';
+        });
+        
+        // Start collapsed on small screens, expanded on large
+        if (window.innerWidth < 768) {
+            authContent.classList.add('hidden');
+            authChevron.style.transform = 'rotate(-90deg)';
+        }
+    }
     
     // Show default tab
     showMainTab('generator');

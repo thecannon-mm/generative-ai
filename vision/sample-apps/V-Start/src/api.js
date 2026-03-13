@@ -15,9 +15,16 @@
  */
 
 export async function callGeminiApi(systemPrompt, contentParts = []) {
+    const authMethod = document.getElementById('auth-method-select')?.value || 'api-key';
+    const accessToken = document.getElementById('access-token-input')?.value || '';
+    const projectId = document.getElementById('project-id-input')?.value || '';
+
     const payload = {
         systemPrompt,
-        contentParts
+        contentParts,
+        authMethod,
+        accessToken,
+        projectId
     };
 
     try {

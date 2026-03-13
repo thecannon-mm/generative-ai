@@ -37,6 +37,73 @@
         </div>
     </header>
 
+    <!-- Authentication Section (Now Collapsible) -->
+    <div id="auth-section-container" class="container mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden transition-all duration-300">
+            <!-- Header/Toggle Wrapper -->
+            <div id="auth-header" class="px-5 py-3 flex justify-between items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
+                <div class="flex items-center gap-2">
+                    <svg class="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                    </svg>
+                    <h3 class="font-bold text-gray-800 dark:text-gray-200">API Authentication</h3>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span id="access-token-status" class="text-xs text-gray-500 truncate max-w-[150px] md:max-w-xs"></span>
+                    <svg id="auth-chevron" class="w-5 h-5 text-gray-400 transform transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div id="auth-content" class="px-5 pb-5 border-t border-gray-100 dark:border-gray-700 pt-4">
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
+                    <!-- Method Select -->
+                    <div class="md:col-span-3">
+                        <label for="auth-method-select" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Method</label>
+                        <select id="auth-method-select" class="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-indigo-500 transition-all outline-none">
+                            <option value="access-token">Google Cloud Access Token</option>
+                            <option value="api-key" selected>Google AI Studio API Key</option>
+                        </select>
+                    </div>
+
+                    <!-- Dynamic Sections Container -->
+                    <div class="md:col-span-9">
+                        <!-- API Key Section (Default) -->
+                        <div id="api-key-auth-section" class="flex flex-col gap-2">
+                            <div class="p-3 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-800 rounded-lg">
+                                <p class="text-xs text-indigo-700 dark:text-indigo-300 flex items-center gap-2">
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"></path></svg>
+                                    Using server-side API key configuration. No action required.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Access Token Section (Hidden by default) -->
+                        <div id="access-token-auth-section" class="hidden">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="project-id-input" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Project ID</label>
+                                    <input type="text" id="project-id-input" value="g-monks-lab" placeholder="your-project-id" class="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-indigo-500 transition-all outline-none">
+                                </div>
+                                <div class="relative">
+                                    <label for="access-token-input" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Access Token</label>
+                                    <div class="flex gap-2">
+                                        <input type="password" id="access-token-input" placeholder="ya29..." class="flex-1 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-indigo-500 transition-all outline-none">
+                                        <button id="validate-token-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 px-4 rounded-lg transition-colors whitespace-nowrap">
+                                            Validate
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div class="flex flex-col md:flex-row gap-8">
             <nav class="md:w-64">
