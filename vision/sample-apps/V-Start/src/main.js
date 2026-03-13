@@ -22,17 +22,14 @@ import { initAlignmentEval, getAlignmentEvalContent } from './features/alignment
 import { initGallery, getGalleryContent } from './features/gallery.js';
 import { initTimeline, getTimelineContent } from './features/timeline.js';
 
-const mainContent = document.getElementById('main-content');
-const authSectionContainer = document.getElementById('auth-section-container');
-
 const tabs = {
-    generator: { getContent: getGeneratorContent, init: initGenerator, needsAuth: true },
-    enhancer: { getContent: getEnhancerContent, init: initEnhancer, needsAuth: true },
-    converter: { getContent: getConverterContent, init: initConverter, needsAuth: true },
-    'alignment-eval': { getContent: getAlignmentEvalContent, init: initAlignmentEval, needsAuth: true },
-    eval: { getContent: getEvalContent, init: initEval, needsAuth: false },
-    gallery: { getContent: getGalleryContent, init: initGallery, needsAuth: false },
-    timeline: { getContent: getTimelineContent, init: initTimeline, needsAuth: true }
+    generator: { getContent: getGeneratorContent, init: initGenerator },
+    enhancer: { getContent: getEnhancerContent, init: initEnhancer },
+    converter: { getContent: getConverterContent, init: initConverter },
+    'alignment-eval': { getContent: getAlignmentEvalContent, init: initAlignmentEval },
+    eval: { getContent: getEvalContent, init: initEval },
+    gallery: { getContent: getGalleryContent, init: initGallery },
+    timeline: { getContent: getTimelineContent, init: initTimeline }
 };
 
 // Dark Mode Functions
@@ -127,9 +124,6 @@ async function showMainTab(tabName) {
         console.warn(`Tab ${tabName} not found`);
         return;
     }
-
-    // Show/hide auth section based on feature needs
-    authSectionContainer.style.display = feature.needsAuth ? 'block' : 'none';
     
     // Load tab content asynchronously.
     mainContent.innerHTML = await feature.getContent();
@@ -152,79 +146,9 @@ async function showMainTab(tabName) {
     console.log(`Switched to ${tabName} tab`);
 }
 
-// Fast validation using Gemini Flash model
+// Token validation - DEPRECATED (Backend handles auth now)
 async function validateAccessToken() {
-    const accessToken = document.getElementById('access-token-input').value;
-    const projectId = document.getElementById('project-id-input').value;
-    const location = document.getElementById('location-input')?.value || 'us-central1';
-    const statusElement = document.getElementById('access-token-status');
-    const validateBtn = document.getElementById('validate-token-btn');
-    const authMethod = document.getElementById('auth-method-select').value;
-
-    // For API key mode, just do client-side check
-    if (authMethod === 'api-key') {
-        statusElement.textContent = '✅ Using server API key. Ready to generate!';
-        statusElement.className = 'text-xs mt-2 h-4 text-blue-600 dark:text-blue-400';
-        validateBtn.textContent = '✓ API Key Mode';
-        setTimeout(() => {
-            validateBtn.textContent = 'Validate';
-        }, 2000);
-        return;
-    }
-
-    // For access token mode, check fields first
-    if (!projectId || !accessToken) {
-        statusElement.textContent = 'Project ID and Token are required.';
-        statusElement.className = 'text-xs mt-2 h-4 text-red-600 dark:text-red-400';
-        return;
-    }
-
-    // Show loading state (should be quick with Flash)
-    validateBtn.disabled = true;
-    validateBtn.textContent = 'Validating...';
-    validateBtn.classList.add('loading');
-    statusElement.textContent = 'Checking credentials...';
-    statusElement.className = 'text-xs mt-2 h-4 text-gray-500 dark:text-gray-400';
-    
-    try {
-        const response = await fetch('/api/validate-token', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ projectId, accessToken, location })  
-        });
-        
-        const result = await response.json();
-        
-        if (result.valid) {
-            statusElement.textContent = '✅ ' + result.message;
-            statusElement.className = 'text-xs mt-2 h-4 text-green-600 dark:text-green-400';
-            validateBtn.textContent = '✓ Validated';
-            validateBtn.classList.add('bg-green-600', 'hover:bg-green-700');
-            showNotification(`Token validated for ${location}!`, 'success');
-            
-            setTimeout(() => {
-                validateBtn.textContent = 'Validate';
-                validateBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
-            }, 3000);
-        } else {
-            statusElement.textContent = `❌ ${result.message}`;
-            statusElement.className = 'text-xs mt-2 h-4 text-red-600 dark:text-red-400';
-            validateBtn.textContent = 'Retry';
-            showNotification('Validation failed', 'error');
-        }
-    } catch (error) {
-        console.error('Token validation error:', error);
-        statusElement.textContent = 'Validation failed. Check server console.';
-        statusElement.className = 'text-xs mt-2 h-4 text-red-600 dark:text-red-400';
-        showNotification('Network error during validation', 'error');
-    } finally {
-        // Reset button state
-        validateBtn.disabled = false;
-        if (validateBtn.textContent === 'Validating...') {
-            validateBtn.textContent = 'Validate';
-        }
-        validateBtn.classList.remove('loading');
-    }
+    console.log('Backend automated authentication enabled.');
 }
 
 // Enhanced notification system with dark mode support
@@ -315,15 +239,6 @@ function initAnimations() {
 document.addEventListener('DOMContentLoaded', () => {
     console.log('VeoStart application initializing...');
     
-    // Get DOM elements
-    const authMethodSelect = document.getElementById('auth-method-select');
-    const apiKeySection = document.getElementById('api-key-auth-section');
-    const accessTokenSection = document.getElementById('access-token-auth-section');
-    const validateTokenBtn = document.getElementById('validate-token-btn');
-    const authHeader = document.getElementById('auth-header');
-    const authContent = document.getElementById('auth-content');
-    const authChevron = document.getElementById('auth-chevron');
-
     // Initialize dark mode first
     initDarkMode();
     
@@ -332,34 +247,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Initialize keyboard shortcuts
     initKeyboardShortcuts();
-
-    // Collapsible auth section logic
-    if (authHeader && authContent && authChevron) {
-        authHeader.addEventListener('click', () => {
-            const isHidden = authContent.classList.contains('hidden');
-            authContent.classList.toggle('hidden');
-            authChevron.classList.toggle('rotate-180');
-            
-            // Add smooth animation
-            if (!prefersReducedMotion()) {
-                authChevron.style.transform = isHidden ? 'rotate(0deg)' : 'rotate(180deg)';
-            }
-        });
-    }
-
-    // Auth method switching
-    if (authMethodSelect && apiKeySection && accessTokenSection) {
-        authMethodSelect.addEventListener('change', () => {
-            const isApiKey = authMethodSelect.value === 'api-key';
-            apiKeySection.style.display = isApiKey ? 'block' : 'none';
-            accessTokenSection.style.display = isApiKey ? 'none' : 'block';
-        });
-    }
-
-    // Token validation
-    if (validateTokenBtn) {
-        validateTokenBtn.addEventListener('click', validateAccessToken);
-    }
 
     // Tab navigation
     Object.keys(tabs).forEach(tabKey => {

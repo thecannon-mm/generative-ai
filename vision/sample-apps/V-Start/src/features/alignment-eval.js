@@ -476,9 +476,9 @@ export function initAlignmentEval() {
                 promptParts.push('');
                 promptParts.push('OUTPUT FORMAT - Return ONLY this JSON (no markdown):');
                 promptParts.push('{');
-                promptParts.push('  "core_subject": "the main subject from the prompt",');
-                promptParts.push('  "core_subject_present": true or false based on actual video content,');
-                promptParts.push('  "holistic_alignment_score": 0 to 100,');
+                promptParts.push('  "coreSubject": "the main subject from the prompt",');
+                promptParts.push('  "coreSubjectPresent": true or false based on actual video content,');
+                promptParts.push('  "holisticAlignmentScore": 0 to 100,');
                 promptParts.push('  "answers": [');
                 promptParts.push('    {"question": "Specific question?", "answer": "Yes/No/Uncertain"}');
                 promptParts.push('  ]');
@@ -487,26 +487,20 @@ export function initAlignmentEval() {
                 const systemPrompt = promptParts.join('\n');
                 
                 console.log('Sending evaluation request for pair #' + pair.id);
-                console.log('Video data length:', base64Data ? base64Data.length : 0);
                 const resultRaw = await callGeminiApi(systemPrompt, videoParts);
-                console.log('Raw response for pair #' + pair.id + ':', resultRaw);
                 
                 const resultData = extractJSON(resultRaw);
-                console.log('Parsed data for pair #' + pair.id + ':', JSON.stringify(resultData, null, 2));
-
                 const answers = resultData.answers || [];
-                const core_subject = resultData.core_subject || 'Unknown';
-                const core_subject_present = resultData.core_subject_present || false;
-                const holistic_alignment_score = resultData.holistic_alignment_score || 0;
-                const score = holistic_alignment_score;
+                const coreSubject = resultData.coreSubject || 'Unknown';
+                const coreSubjectPresent = resultData.coreSubjectPresent || false;
+                const holisticAlignmentScore = resultData.holisticAlignmentScore || 0;
+                const score = holisticAlignmentScore;
                 
                 // Validation check for evaluation quality
                 if (answers && answers.length > 2) {
                     const yesCount = answers.filter(a => String(a.answer).toLowerCase() === 'yes').length;
                     const noCount = answers.filter(a => String(a.answer).toLowerCase() === 'no').length;
                     const yesPercentage = (yesCount / answers.length) * 100;
-                    
-                    console.log('Pair #' + pair.id + ' evaluation distribution: ' + yesCount + ' Yes, ' + noCount + ' No, ' + (answers.length - yesCount - noCount) + ' Uncertain');
                     
                     if (yesPercentage === 100 && answers.length > 3) {
                         console.warn('Warning: All answers are YES for pair #' + pair.id + ' - evaluation might be too lenient');
@@ -518,8 +512,8 @@ export function initAlignmentEval() {
                     prompt: pair.prompt, 
                     videoName: pair.videoName,
                     score: score, 
-                    core_subject: core_subject, 
-                    core_subject_present: core_subject_present, 
+                    coreSubject: coreSubject, 
+                    coreSubjectPresent: coreSubjectPresent, 
                     answers: answers
                 });
                 
@@ -563,17 +557,17 @@ export function initAlignmentEval() {
                     '<summary class="cursor-pointer font-semibold text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200">View Detailed Evaluation</summary>' +
                     '<div class="mt-3 space-y-3">' +
                     '<div class="flex items-start text-sm">' +
-                    '<span class="' + (core_subject_present ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400') + ' mr-2 font-bold">' + (core_subject_present ? '[YES]' : '[NO]') + '</span>' +
+                    '<span class="' + (coreSubjectPresent ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400') + ' mr-2 font-bold">' + (coreSubjectPresent ? '[YES]' : '[NO]') + '</span>' +
                     '<div class="flex-1">' +
-                    '<p class="font-semibold text-gray-800 dark:text-gray-200">Core Subject: "' + core_subject + '"</p>' +
-                    '<p class="' + (core_subject_present ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400') + '">' + (core_subject_present ? 'Present in video' : 'Missing from video') + '</p>' +
+                    '<p class="font-semibold text-gray-800 dark:text-gray-200">Core Subject: "' + coreSubject + '"</p>' +
+                    '<p class="' + (coreSubjectPresent ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400') + '">' + (coreSubjectPresent ? 'Present in video' : 'Missing from video') + '</p>' +
                     '</div>' +
                     '</div>' +
                     answersHTML +
                     '<div class="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">' +
                     '<p class="text-xs text-gray-500 dark:text-gray-400">' +
                     'Summary: ' + yesCountFinal + '/' + answers.length + ' criteria met' +
-                    (!core_subject_present ? ' (Core subject missing - score capped at 20%)' : '') +
+                    (!coreSubjectPresent ? ' (Core subject missing - score capped at 20%)' : '') +
                     '</p>' +
                     '</div>' +
                     '</div>' +
@@ -619,8 +613,8 @@ export function initAlignmentEval() {
                         escapeCsv(r.prompt), 
                         escapeCsv(r.videoName), 
                         r.score, 
-                        escapeCsv(r.core_subject), 
-                        r.core_subject_present,
+                        escapeCsv(r.coreSubject), 
+                        r.coreSubjectPresent,
                         totalQuestions,
                         questionsMet,
                         escapeCsv((idx + 1) + '. ' + answer.question), 
@@ -634,8 +628,8 @@ export function initAlignmentEval() {
                     escapeCsv(r.prompt), 
                     escapeCsv(r.videoName), 
                     r.score, 
-                    escapeCsv(r.core_subject), 
-                    r.core_subject_present,
+                    escapeCsv(r.coreSubject), 
+                    r.coreSubjectPresent,
                     0,
                     0,
                     "N/A", 

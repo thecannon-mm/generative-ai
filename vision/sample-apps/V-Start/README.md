@@ -79,56 +79,27 @@ The repository is organized as follows:
 
 ## Authentication Setup
 
-V-Start supports two authentication methods for flexibility:
+V-Start uses automated authentication via the Google Cloud SDK (`gcloud`).
 
-### Method 1: Google Cloud Access Token
-
-This method uses your own Google Cloud Project.
-
-1. **Set up a Google Cloud Project:**
-   - Go to the [Google Cloud Console](https://console.cloud.google.com/)
-   - Create a new project or select an existing one
-   - Enable billing for your project
-
-2. **Enable required APIs:**
-   ```bash
-   # Set your project ID
-   export PROJECT_ID="your-gcp-project-id"
-   gcloud config set project $PROJECT_ID
-
-   # Enable Vertex AI API
-   gcloud services enable aiplatform.googleapis.com
-   ```
-
-3. **Install and authenticate gcloud CLI:**
+1. **Install and authenticate gcloud CLI:**
    - Install the [Google Cloud SDK](https://cloud.google.com/sdk/docs/install)
    - Authenticate with your Google account:
      ```bash
      gcloud auth login
      ```
 
-4. **Get your access token:**
+2. **Configure your project:**
+   - Set your active project:
+     ```bash
+     gcloud config set project g-monks-lab
+     ```
+
+3. **Enable required APIs:**
    ```bash
-   gcloud auth print-access-token
+   gcloud services enable aiplatform.googleapis.com
    ```
-   **Note:** Access tokens expire after 1 hour. You'll need to run this command again to get a new token when it expires.
 
-5. **Use in V-Start:**
-   - In the V-Start UI, select "gcloud Access Token" as your authentication method
-   - Enter your Project ID and the access token from step 4
-
-### Method 2: Google AI Studio API Key
-
-1. **Get your API Key:**
-   - Go to [Google AI Studio](https://aistudio.google.com/app/apikey)
-   - Sign in with your Google account
-   - Click "Create API Key"
-   - Choose "Create API key in new project" or select an existing project
-   - Copy the generated API key
-
-2. **Configure the application:**
-   - Add the API key to your .env file (see Installation section below)
-   - In the V-Start UI, select "API Key" as your authentication method
+The application will automatically fetch and refresh access tokens using your `gcloud` credentials. No manual token or API key entry is required in the UI.
 
 ## 🚀 Getting Started (Local Development)
 

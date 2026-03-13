@@ -238,23 +238,23 @@ export function initEval() {
     };
     
     const calculateResults = () => {
-        const stats = { totalPairs: evaluationResults.length, groupA_wins: 0, groupB_wins: 0, ties: 0 };
+        const stats = { totalPairs: evaluationResults.length, groupAWins: 0, groupBWins: 0, ties: 0 };
         
         evaluationResults.forEach(result => {
             if (result.response === 'Video A is higher quality') {
-                if (result.assignment.videoA_group === 'plain' || result.assignment.videoA_group === 'A') stats.groupA_wins++;
-                else stats.groupB_wins++;
+                if (result.assignment.videoA_group === 'plain' || result.assignment.videoA_group === 'A') stats.groupAWins++;
+                else stats.groupBWins++;
             } else if (result.response === 'Video B is higher quality') {
-                if (result.assignment.videoB_group === 'plain' || result.assignment.videoB_group === 'A') stats.groupA_wins++;
-                else stats.groupB_wins++;
+                if (result.assignment.videoB_group === 'plain' || result.assignment.videoB_group === 'A') stats.groupAWins++;
+                else stats.groupBWins++;
             } else {
                 stats.ties++;
             }
         });
 
         if (isPreloadedStudy) {
-            stats.plain_wins = stats.groupA_wins;
-            stats.json_wins = stats.groupB_wins;
+            stats.plainWins = stats.groupAWins;
+            stats.jsonWins = stats.groupBWins;
         }
         
         return stats;
@@ -265,15 +265,15 @@ export function initEval() {
         const tiePercent = (stats.ties / stats.totalPairs) * 100;
 
         if (isPreloadedStudy) {
-            const jsonPercent = (stats.json_wins / stats.totalPairs) * 100;
-            const plainPercent = (stats.plain_wins / stats.totalPairs) * 100;
+            const jsonPercent = (stats.jsonWins / stats.totalPairs) * 100;
+            const plainPercent = (stats.plainWins / stats.totalPairs) * 100;
             if (tiePercent > 50) return `<p><strong>Conclusion: The model appears robust to prompt format.</strong> Both formats produced comparable results.</p>`;
-            if (stats.json_wins > stats.plain_wins) return `<p><strong>Conclusion: JSON-structured prompts performed better.</strong> Videos from JSON prompts were preferred in ${jsonPercent.toFixed(1)}% of evaluations.</p>`;
-            if (stats.plain_wins > stats.json_wins) return `<p><strong>Conclusion: Plain text prompts performed better.</strong> Videos from plain text prompts were preferred in ${plainPercent.toFixed(1)}% of evaluations.</p>`;
+            if (stats.jsonWins > stats.plainWins) return `<p><strong>Conclusion: JSON-structured prompts performed better.</strong> Videos from JSON prompts were preferred in ${jsonPercent.toFixed(1)}% of evaluations.</p>`;
+            if (stats.plainWins > stats.jsonWins) return `<p><strong>Conclusion: Plain text prompts performed better.</strong> Videos from plain text prompts were preferred in ${plainPercent.toFixed(1)}% of evaluations.</p>`;
             return `<p><strong>Conclusion: The results were tied.</strong> Both formats performed equally well.</p>`;
         } else {
-            const groupAPercent = (stats.groupA_wins / stats.totalPairs) * 100;
-            const groupBPercent = (stats.groupB_wins / stats.totalPairs) * 100;
+            const groupAPercent = (stats.groupAWins / stats.totalPairs) * 100;
+            const groupBPercent = (stats.groupBWins / stats.totalPairs) * 100;
             return `<p><strong>Results:</strong> Group A was preferred ${groupAPercent.toFixed(1)}% of the time, and Group B was preferred ${groupBPercent.toFixed(1)}% of the time.</p>`;
         }
     };

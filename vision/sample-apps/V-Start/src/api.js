@@ -15,15 +15,7 @@
  */
 
 export async function callGeminiApi(systemPrompt, contentParts = []) {
-    // Read the selected auth method and credentials from the global UI elements
-    const authMethod = document.getElementById('auth-method-select').value;
-    const accessToken = document.getElementById('access-token-input').value;
-    const projectId = document.getElementById('project-id-input').value;
-
     const payload = {
-        authMethod,
-        accessToken,
-        projectId,
         systemPrompt,
         contentParts
     };
